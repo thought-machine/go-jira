@@ -7,35 +7,33 @@ on:
   pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: read
+  pull-requests: read
+  checks: write
+
 jobs:
   test:
     name: Test and lint
     strategy:
       fail-fast: false
       matrix:
-        go: [ '1.18', '1.17' ]
+        go: [ '1.22', '1.21' ]
         os: [ 'windows-latest', 'ubuntu-latest', 'macOS-latest' ]
     runs-on: ${{ matrix.os }}
 
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-go@v3
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
         with:
           go-version: ${{ matrix.go }}
+          check-latest: true
 
-      - name: Run go fmt (Go ${{ matrix.go }})
-        if: runner.os != 'Windows'
-        run: diff -u <(echo -n) <(gofmt -d -s .)
-
-      - name: Run go vet
-        run: make vet
-
-      - name: Run staticcheck (Go ${{ matrix.go }})
-        uses: dominikh/staticcheck-action@v1.2.0
+      - name: Run golangci-lint (Go ${{ matrix.go }})
+        uses: golangci/golangci-lint-action@v4
         with:
-          version: "2022.1"
-          install-go: false
-          cache-key: ${{ matrix.go }}
+          version: v1.56
 
       - name: Run Unit tests (Go ${{ matrix.go }})
         run: make test
