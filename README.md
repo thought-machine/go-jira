@@ -4,6 +4,12 @@
 [![Build Status](https://github.com/andygrunwald/go-jira/actions/workflows/testing.yml/badge.svg)](https://github.com/andygrunwald/go-jira/actions/workflows/testing.yml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/andygrunwald/go-jira)](https://goreportcard.com/report/github.com/andygrunwald/go-jira)
 
+> [!NOTE]
+> This is a fork of the v1 series of [`github.com/andygrunwald/go-jira`](https://github.com/andygrunwald/go-jira), which is no longer being developed upstream.
+>
+> This module is used internally at [Thought Machine](https://www.thoughtmachine.net); you're welcome to fork this repo to benefit from improvements we have
+> made to the upstream project, although we can't guarantee that pull requests will be merged.
+
 [Go](https://golang.org/) client library for [Atlassian Jira](https://www.atlassian.com/software/jira).
 
 ![Go client library for Atlassian Jira](./img/logo_small.png "Go client library for Atlassian Jira.")
