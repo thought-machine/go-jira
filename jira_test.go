@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
+	"math"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -432,6 +433,42 @@ func TestClient_Do_RedirectLoop(t *testing.T) {
 	}
 }
 
+// Test handling of responses that simulate an API rate limit being exceeded.
+// The client should automatically back off until the duration given by the Retry-After response
+// header has elapsed, meaning that the request should succeed from the caller's perspective.
+func TestClient_Do_TooManyRequests(t *testing.T) {
+	setup()
+	defer teardown()
+
+	raw, err := ioutil.ReadFile("./mocks/too_many_requests.html")
+	if err != nil {
+		t.Error(err.Error())
+	}
+
+	// Permit requests after 3 seconds have elapsed
+	cooloff := time.Now().Add(3 * time.Second)
+
+	testMux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		remaining := int(math.Ceil(time.Until(cooloff).Seconds()))
+		if remaining > 0 {
+			w.Header().Set("Retry-After", fmt.Sprintf("%d", remaining))
+			http.Error(w, string(raw), 429)
+		} else {
+			fmt.Fprint(w, `{}`)
+		}
+	})
+
+	req, _ := testClient.NewRequest("GET", "/", nil)
+	res, _ := testClient.Do(req, nil)
+	_, err = ioutil.ReadAll(res.Body)
+
+	if err != nil {
+		t.Errorf("Error on parsing HTTP Response = %v", err.Error())
+	} else if res.StatusCode != 200 {
+		t.Errorf("Response code = %v, want %v", res.StatusCode, 200)
+	}
+}
+
 func TestClient_GetBaseURL_WithURL(t *testing.T) {
 	u, err := url.Parse(testJiraInstanceURL)
 	if err != nil {
@@ -480,18 +517,73 @@ func TestBasicAuthTransport(t *testing.T) {
 	basicAuthClient.Do(req, nil)
 }
 
+// Test handling of responses that simulate an API rate limit being exceeded when the client is
+// backed by BasicAuthTransport.
+// The client should automatically back off until the duration given by the Retry-After response
+// header has elapsed, meaning that the request should succeed from the caller's perspective.
+func TestBasicAuthTransport_TooManyRequests(t *testing.T) {
+	setup()
+	defer teardown()
+
+	username, password := "username", "password"
+
+	raw, err := ioutil.ReadFile("./mocks/too_many_requests.html")
+	if err != nil {
+		t.Error(err.Error())
+	}
+
+	// Permit requests after 3 seconds have elapsed
+	cooloff := time.Now().Add(3 * time.Second)
+
+	testMux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		u, p, ok := r.BasicAuth()
+		if !ok {
+			t.Errorf("request does not contain basic auth credentials")
+		}
+		if u != username {
+			t.Errorf("request contained basic auth username %q, want %q", u, username)
+		}
+		if p != password {
+			t.Errorf("request contained basic auth password %q, want %q", p, password)
+		}
+		remaining := int(math.Ceil(time.Until(cooloff).Seconds()))
+		if remaining > 0 {
+			w.Header().Set("Retry-After", fmt.Sprintf("%d", remaining))
+			http.Error(w, string(raw), 429)
+		} else {
+			fmt.Fprint(w, `{}`)
+		}
+	})
+
+	tp := &BasicAuthTransport{
+		Username: username,
+		Password: password,
+	}
+
+	basicAuthClient, _ := NewClient(tp.Client(), testServer.URL)
+	req, _ := basicAuthClient.NewRequest("GET", "/", nil)
+	res, _ := basicAuthClient.Do(req, nil)
+	_, err = ioutil.ReadAll(res.Body)
+
+	if err != nil {
+		t.Errorf("Error on parsing HTTP Response = %v", err.Error())
+	} else if res.StatusCode != 200 {
+		t.Errorf("Response code = %v, want %v", res.StatusCode, 200)
+	}
+}
+
 func TestBasicAuthTransport_transport(t *testing.T) {
 	// default transport
 	tp := &BasicAuthTransport{}
-	if tp.transport() != http.DefaultTransport {
-		t.Errorf("Expected http.DefaultTransport to be used.")
+	if tp.transport() != defaultTransport {
+		t.Errorf("Expected defaultTransport to be used.")
 	}
 
 	// custom transport
 	tp = &BasicAuthTransport{
 		Transport: &http.Transport{},
 	}
-	if tp.transport() == http.DefaultTransport {
+	if tp.transport() == defaultTransport {
 		t.Errorf("Expected custom transport to be used.")
 	}
 }

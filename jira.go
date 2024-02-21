@@ -17,6 +17,7 @@ import (
 
 	jwt "github.com/golang-jwt/jwt/v4"
 	"github.com/google/go-querystring/query"
+	"github.com/hashicorp/go-retryablehttp"
 	"github.com/pkg/errors"
 )
 
@@ -62,8 +63,24 @@ type Client struct {
 	Request          *RequestService
 }
 
+// defaultClient is the underlying HTTP client used by the Jira API client if no other HTTP client
+// is specified.
+//
+// Both the Jira REST API and retryablehttp.DefaultRetryPolicy implement RFC 6585 section 4, in
+// which the server responds with status code 429 if too many requests have been sent and the
+// client backs off for at least the number of seconds given in the Retry-After response header
+// before retrying; this means that a retryablehttp.Client with default settings is all that is
+// needed to obey Jira's API rate limits.
+var defaultClient = retryablehttp.NewClient()
+
+// defaultTransport is the underlying Transport used by the other Transports in this package if no
+// other Transport is specified. It ensures that failed requests are automatically retried.
+var defaultTransport = &retryablehttp.RoundTripper{Client: defaultClient}
+
 // NewClient returns a new Jira API client.
-// If a nil httpClient is provided, http.DefaultClient will be used.
+// If a nil httpClient is provided, a retryablehttp.Client with default settings will be used; this
+// ensures that requests that exceed Jira's rate limits are automatically retried after the cooldown
+// period.
 // To use API methods which require authentication you can follow the preferred solution and
 // provide an http.Client that will perform the authentication for you with OAuth and HTTP Basic (such as that provided by the golang.org/x/oauth2 library).
 // As an alternative you can use Session Cookie based authentication provided by this package as well.
@@ -71,7 +88,7 @@ type Client struct {
 // baseURL is the HTTP endpoint of your Jira instance and should always be specified with a trailing slash.
 func NewClient(httpClient httpClient, baseURL string) (*Client, error) {
 	if httpClient == nil {
-		httpClient = http.DefaultClient
+		httpClient = defaultClient.StandardClient()
 	}
 
 	// ensure the baseURL contains a trailing slash so that all paths are preserved in later calls
@@ -357,7 +374,7 @@ type BasicAuthTransport struct {
 	Password string
 
 	// Transport is the underlying HTTP transport to use when making requests.
-	// It will default to http.DefaultTransport if nil.
+	// If nil, defaults to a Transport that automatically retries the request on failure.
 	Transport http.RoundTripper
 }
 
@@ -383,7 +400,7 @@ func (t *BasicAuthTransport) transport() http.RoundTripper {
 	if t.Transport != nil {
 		return t.Transport
 	}
-	return http.DefaultTransport
+	return defaultTransport
 }
 
 // BearerAuthTransport is a http.RoundTripper that authenticates all requests
@@ -392,7 +409,7 @@ type BearerAuthTransport struct {
 	Token string
 
 	// Transport is the underlying HTTP transport to use when making requests.
-	// It will default to http.DefaultTransport if nil.
+	// If nil, defaults to a Transport that automatically retries the request on failure.
 	Transport http.RoundTripper
 }
 
@@ -418,7 +435,7 @@ func (t *BearerAuthTransport) transport() http.RoundTripper {
 	if t.Transport != nil {
 		return t.Transport
 	}
-	return http.DefaultTransport
+	return defaultTransport
 }
 
 // PATAuthTransport is an http.RoundTripper that authenticates all requests
@@ -429,7 +446,7 @@ type PATAuthTransport struct {
 	Token string
 
 	// Transport is the underlying HTTP transport to use when making requests.
-	// It will default to http.DefaultTransport if nil.
+	// If nil, defaults to a Transport that automatically retries the request on failure.
 	Transport http.RoundTripper
 }
 
@@ -454,7 +471,7 @@ func (t *PATAuthTransport) transport() http.RoundTripper {
 	if t.Transport != nil {
 		return t.Transport
 	}
-	return http.DefaultTransport
+	return defaultTransport
 }
 
 // CookieAuthTransport is an http.RoundTripper that authenticates all requests
@@ -474,7 +491,7 @@ type CookieAuthTransport struct {
 	SessionObject []*http.Cookie
 
 	// Transport is the underlying HTTP transport to use when making requests.
-	// It will default to http.DefaultTransport if nil.
+	// If nil, defaults to a Transport that automatically retries the request on failure.
 	Transport http.RoundTripper
 }
 
@@ -554,7 +571,7 @@ func (t *CookieAuthTransport) transport() http.RoundTripper {
 	if t.Transport != nil {
 		return t.Transport
 	}
-	return http.DefaultTransport
+	return defaultTransport
 }
 
 // JWTAuthTransport is an http.RoundTripper that authenticates all requests
@@ -571,7 +588,7 @@ type JWTAuthTransport struct {
 	Issuer string
 
 	// Transport is the underlying HTTP transport to use when making requests.
-	// It will default to http.DefaultTransport if nil.
+	// If nil, defaults to a Transport that automatically retries the request on failure.
 	Transport http.RoundTripper
 }
 
@@ -583,7 +600,7 @@ func (t *JWTAuthTransport) transport() http.RoundTripper {
 	if t.Transport != nil {
 		return t.Transport
 	}
-	return http.DefaultTransport
+	return defaultTransport
 }
 
 // RoundTrip adds the session object to the request.
