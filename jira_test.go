@@ -293,6 +293,51 @@ func TestClient_NewRequest_EmptyBody(t *testing.T) {
 	}
 }
 
+// Tests that addOptions correctly serialises *bools, which are used to convey the desired value of
+// options that default to true on the API endpoint if a value is not specified in the request:
+//
+// | Option value | Expected outcome               |
+// | ------------ | ------------------------------ |
+// | *true        | opt=true in request            |
+// | *false       | opt=false in request           |
+// | nil          | Determined by the API endpoint |
+func Test_addOptions_Bool_Pointer(t *testing.T) {
+	apiEndpoint := "rest/api/2/issue/123"
+
+	for _, test := range []struct {
+		Description string
+		Opts        *UpdateQueryOptions
+		Expected    string
+	}{
+		{
+			Description: "*bool implicitly nil",
+			Opts:        &UpdateQueryOptions{},
+			Expected:    "",
+		},
+		{
+			Description: "*bool explicitly nil",
+			Opts:        &UpdateQueryOptions{NotifyUsers: nil},
+			Expected:    "",
+		},
+		{
+			Description: "*bool explicitly true",
+			Opts:        &UpdateQueryOptions{NotifyUsers: Bool(true)},
+			Expected:    "?notifyUsers=true",
+		},
+		{
+			Description: "*bool explicitly false",
+			Opts:        &UpdateQueryOptions{NotifyUsers: Bool(false)},
+			Expected:    "?notifyUsers=false",
+		},
+	} {
+		t.Run(test.Description, func(t *testing.T) {
+			actual, err := addOptions(apiEndpoint, test.Opts)
+			assert.NoError(t, err)
+			assert.Equal(t, apiEndpoint + test.Expected, actual)
+		})
+	}
+}
+
 func TestClient_NewMultiPartRequest(t *testing.T) {
 	c, err := NewClient(nil, testJiraInstanceURL)
 	if err != nil {
