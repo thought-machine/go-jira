@@ -10,11 +10,14 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
+	"path/filepath"
 	"reflect"
 	"sort"
 	"strings"
 	"time"
 
+	"github.com/jdx/go-netrc"
 	jwt "github.com/golang-jwt/jwt/v4"
 	"github.com/google/go-querystring/query"
 	"github.com/hashicorp/go-retryablehttp"
@@ -397,6 +400,144 @@ func (t *BasicAuthTransport) Client() *http.Client {
 }
 
 func (t *BasicAuthTransport) transport() http.RoundTripper {
+	if t.Transport != nil {
+		return t.Transport
+	}
+	return defaultTransport
+}
+
+// netrcCredentials contains the login name and password for a particular machine, as
+// defined by a netrc file.
+type netrcCredentials struct {
+	Login    string
+	Password string
+}
+
+// NetrcBasicAuthTransport is an http.RoundTripper that authenticates all requests
+// using HTTP Basic Authentication with the machine login and password sourced from a
+// netrc file.
+//
+// In the netrc file format, machine names are hostnames - they may not contain port
+// numbers or URL paths. NetrcBasicAuthTransport may therefore behave incorrectly if the
+// netrc file contains credentials for multiple Jira API instances hosted on the same
+// host but on different ports or at different URL paths.
+//
+// netrc file format reference: https://www.gnu.org/software/inetutils/manual/html_node/The-_002enetrc-file.html
+type NetrcBasicAuthTransport struct {
+	// Path is the path to the netrc file containing the Jira credentials. If nil, the
+	// .netrc file in the user's home directory is used.
+	Path *string
+
+	// Transport is the underlying HTTP transport to use when making requests.
+	// If nil, defaults to a Transport that automatically retries the request on failure.
+	Transport http.RoundTripper
+
+	netrcFile *netrc.Netrc
+	cache     map[string]*netrcCredentials
+}
+
+// DefaultNetrcBasicAuthTransport creates a NetrcBasicAuthTransport from the credentials
+// stored in ~/.netrc.
+func DefaultNetrcBasicAuthTransport() *NetrcBasicAuthTransport {
+	return &NetrcBasicAuthTransport{
+		Path:  nil,
+		cache: make(map[string]*netrcCredentials),
+	}
+}
+
+// NewNetrcBasicAuthTransport creates a NetrcBasicAuthTransport from the credentials stored in the
+// netrc file at the given path.
+func NewNetrcBasicAuthTransport(path string) *NetrcBasicAuthTransport {
+	return &NetrcBasicAuthTransport{
+		Path:  &path,
+		cache: make(map[string]*netrcCredentials),
+	}
+}
+
+// RoundTrip implements the RoundTripper interface. We just add the credentials and return the
+// RoundTripper for this transport type.
+func (t *NetrcBasicAuthTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	req2 := cloneRequest(req) // per RoundTripper contract
+
+	creds, err := t.credentials(req.URL.Hostname())
+	if err != nil {
+		return nil, err
+	}
+
+	req2.SetBasicAuth(creds.Login, creds.Password)
+	return t.transport().RoundTrip(req2)
+}
+
+func (t *NetrcBasicAuthTransport) parseNetrcFile() error {
+	if t.Path == nil {
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			return fmt.Errorf("failed to get path to user's home directory: %w", err)
+		}
+		p := filepath.Join(homeDir, ".netrc")
+		t.Path = &p
+	}
+
+	n, err := netrc.Parse(*t.Path)
+	if err != nil {
+		return fmt.Errorf("%s: parsing failure: %w", *t.Path, err)
+	}
+	t.netrcFile = n
+
+	return nil
+}
+
+func (t *NetrcBasicAuthTransport) credentials(host string) (*netrcCredentials, error) {
+	if t.netrcFile == nil {
+		err := t.parseNetrcFile()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	creds, exists := t.cache[host]
+	if !exists {
+		machine := t.netrcFile.Machine(host)
+		if machine == nil {
+			return nil, fmt.Errorf("%s: no credentials for machine '%s'", *t.Path, host)
+		}
+		if machine.Get("login") == "" {
+			return nil, fmt.Errorf("%s: no login for machine '%s'", *t.Path, host)
+		}
+		if machine.Get("password") == "" {
+			return nil, fmt.Errorf("%s: no password for machine '%s'", *t.Path, host)
+		}
+		t.cache[host] = &netrcCredentials{
+			Login:    machine.Get("login"),
+			Password: machine.Get("password"),
+		}
+		creds = t.cache[host]
+	}
+
+	return creds, nil
+}
+
+// Username returns the HTTP Basic Authentication username that would be used to authenticate
+// with the Jira API at the given hostname.
+func (t *NetrcBasicAuthTransport) Username(host string) (string, error) {
+	creds, err := t.credentials(host)
+	if err != nil {
+		return "", err
+	}
+	return creds.Login, nil
+}
+
+// Client returns an *http.Client that makes requests that are authenticated using HTTP Basic
+// Authentication with credentials from a netrc file. This is a nice little bit of sugar so
+// we can just get the client instead of creating the client in the calling code.
+//
+// If it's necessary to send more information on client init, the calling code can always skip this
+// and set the transport itself.
+func (t *NetrcBasicAuthTransport) Client() *http.Client {
+	return &http.Client{Transport: t}
+}
+
+func (t *NetrcBasicAuthTransport) transport() http.RoundTripper {
 	if t.Transport != nil {
 		return t.Transport
 	}

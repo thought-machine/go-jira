@@ -2,6 +2,7 @@ package jira
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"math"
@@ -12,6 +13,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 const (
@@ -581,6 +584,92 @@ func TestBasicAuthTransport_transport(t *testing.T) {
 
 	// custom transport
 	tp = &BasicAuthTransport{
+		Transport: &http.Transport{},
+	}
+	if tp.transport() == defaultTransport {
+		t.Errorf("Expected custom transport to be used.")
+	}
+}
+
+func TestNetrcBasicAuthTransport(t *testing.T) {
+	username, password := "jirauser", "jirapass"
+
+	for _, test := range []struct {
+		Description string
+		NetrcPath   string
+		ServerError string
+		ClientError string
+	}{
+		{
+			Description: "Missing netrc file",
+			NetrcPath:   "test_data/netrc/nonexistent.netrc",
+			ClientError: "no such file or directory",
+		},
+		{
+			Description: "Machine exists",
+			NetrcPath:   "test_data/netrc/machine.netrc",
+		},
+		{
+			Description: "Machine missing",
+			NetrcPath:   "test_data/netrc/no_machine.netrc",
+			ClientError: "no credentials for machine",
+		},
+		{
+			Description: "Machine exists, but credentials incorrect",
+			NetrcPath:   "test_data/netrc/wrong_creds.netrc",
+			ServerError: "request contained wrong basic auth password",
+		},
+	} {
+		setup()
+
+		var serverErr error
+		testMux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+			u, p, ok := r.BasicAuth()
+			if !ok {
+				serverErr = errors.New("request does not contain basic auth credentials")
+			}
+			if u != username {
+				serverErr = fmt.Errorf("request contained wrong basic auth username: got %q, want %q", u, username)
+			}
+			if p != password {
+				serverErr = fmt.Errorf("request contained wrong basic auth password: got %q, want %q", p, password)
+			}
+		})
+
+		tp := NewNetrcBasicAuthTransport(test.NetrcPath)
+		client, _ := NewClient(tp.Client(), testServer.URL)
+		req, _ := client.NewRequest("GET", "/", nil)
+		_, clientErr := client.Do(req, nil)
+
+		if test.ServerError == "" {
+			assert.NoError(t, serverErr)
+		} else {
+			assert.ErrorContains(t, serverErr, test.ServerError)
+		}
+		if test.ClientError == "" {
+			assert.NoError(t, clientErr)
+		} else {
+			assert.ErrorContains(t, clientErr, test.ClientError)
+		}
+		if test.ServerError == "" && test.ClientError == "" {
+			u, err := tp.Username(req.URL.Hostname())
+			assert.Equal(t, username, u)
+			assert.NoError(t, err)
+		}
+
+		teardown()
+	}
+}
+
+func TestNetrcBasicAuthTransport_transport(t *testing.T) {
+	// default transport
+	tp := &NetrcBasicAuthTransport{}
+	if tp.transport() != defaultTransport {
+		t.Errorf("Expected defaultTransport to be used.")
+	}
+
+	// custom transport
+	tp = &NetrcBasicAuthTransport{
 		Transport: &http.Transport{},
 	}
 	if tp.transport() == defaultTransport {
