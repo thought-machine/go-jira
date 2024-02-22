@@ -603,7 +603,7 @@ func TestNetrcBasicAuthTransport(t *testing.T) {
 		{
 			Description: "Missing netrc file",
 			NetrcPath:   "test_data/netrc/nonexistent.netrc",
-			ClientError: "no such file or directory",
+			ClientError: "open test_data/netrc/nonexistent.netrc",
 		},
 		{
 			Description: "Machine exists",
