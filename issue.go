@@ -890,24 +890,42 @@ func (s *IssueService) Update(issue *Issue) (*Issue, *Response, error) {
 	return s.UpdateWithContext(context.Background(), issue)
 }
 
-// UpdateIssueWithContext updates an issue from a JSON representation. The issue is found by key.
+// UpdateIssueWithOptionsWithContext updates an issue from a JSON representation,
+// while also specifying query params. The issue is found by key.
 //
-// https://docs.atlassian.com/jira/REST/7.4.0/#api/2/issue-editIssue
+// Jira API docs: https://docs.atlassian.com/jira/REST/cloud/#api/2/issue-editIssue
 // Caller must close resp.Body
-func (s *IssueService) UpdateIssueWithContext(ctx context.Context, jiraID string, data map[string]interface{}) (*Response, error) {
+func (s *IssueService) UpdateIssueWithOptionsWithContext(ctx context.Context, jiraID string, data map[string]interface{}, opts *UpdateQueryOptions) (*Response, error) {
 	apiEndpoint := fmt.Sprintf("rest/api/2/issue/%v", jiraID)
-	req, err := s.client.NewRequestWithContext(ctx, "PUT", apiEndpoint, data)
+	url, err := addOptions(apiEndpoint, opts)
+	if err != nil {
+		return nil, err
+	}
+	req, err := s.client.NewRequestWithContext(ctx, "PUT", url, data)
 	if err != nil {
 		return nil, err
 	}
 	resp, err := s.client.Do(req, nil)
 	if err != nil {
-		return resp, err
+		jerr := NewJiraError(resp, err)
+		return resp, jerr
 	}
 
-	// This is just to follow the rest of the API's convention of returning an issue.
-	// Returning the same pointer here is pointless, so we return a copy instead.
 	return resp, nil
+}
+
+// UpdateIssueWithOptions wraps UpdateIssueWithOptionsWithContext using the background context.
+// Caller must close resp.Body
+func (s *IssueService) UpdateIssueWithOptions(jiraID string, data map[string]interface{}, opts *UpdateQueryOptions) (*Response, error) {
+	return s.UpdateIssueWithOptionsWithContext(context.Background(), jiraID, data, opts)
+}
+
+// UpdateIssueWithContext updates an issue from a JSON representation. The issue is found by key.
+//
+// Jira API docs: https://docs.atlassian.com/jira/REST/cloud/#api/2/issue-editIssue
+// Caller must close resp.Body
+func (s *IssueService) UpdateIssueWithContext(ctx context.Context, jiraID string, data map[string]interface{}) (*Response, error) {
+	return s.UpdateIssueWithOptionsWithContext(ctx, jiraID, data, nil)
 }
 
 // UpdateIssue wraps UpdateIssueWithContext using the background context.
