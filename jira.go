@@ -72,13 +72,20 @@ type Client struct {
 // Both the Jira REST API and retryablehttp.DefaultRetryPolicy implement RFC 6585 section 4, in
 // which the server responds with status code 429 if too many requests have been sent and the
 // client backs off for at least the number of seconds given in the Retry-After response header
-// before retrying; this means that a retryablehttp.Client with default settings is all that is
-// needed to obey Jira's API rate limits.
-var defaultClient = retryablehttp.NewClient()
+// before retrying; this means that a retryablehttp.Client will obey Jira's API rate limits out of
+// the box.
+var defaultClient *retryablehttp.Client
 
 // defaultTransport is the underlying Transport used by the other Transports in this package if no
 // other Transport is specified. It ensures that failed requests are automatically retried.
-var defaultTransport = &retryablehttp.RoundTripper{Client: defaultClient}
+var defaultTransport *retryablehttp.RoundTripper
+
+func init() {
+	defaultClient = retryablehttp.NewClient()
+	defaultClient.Logger = logger
+
+	defaultTransport = &retryablehttp.RoundTripper{Client: defaultClient}
+}
 
 // NewClient returns a new Jira API client.
 // If a nil httpClient is provided, a retryablehttp.Client with default settings will be used; this
