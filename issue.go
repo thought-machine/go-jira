@@ -39,6 +39,24 @@ type UpdateQueryOptions struct {
 	OverrideEditableFlag   *bool `url:"overrideEditableFlag,omitempty"`
 }
 
+// BulkRequest represents a series of Jira issues.
+type BulkRequest struct {
+	IssueUpdates []Issue `json:"issueUpdates"`
+}
+
+// BulkIssueResult represents the specific JSON body returned by the Bulk API.
+type BulkResult struct {
+	Issues []Issue `json:"issues"`
+	Errors []BulkError `json:"errors"`
+}
+
+// BulkError represents the error structure specific to bulk operations.
+type BulkError struct {
+	Status int `json:"status"`
+	ElementErrors map[string]string `json:"elementErrors"`
+	FailedElement int `json:"failedElementNumber"`
+}
+
 // Issue represents a Jira issue.
 type Issue struct {
 	Expand         string               `json:"expand,omitempty" structs:"expand,omitempty"`
@@ -918,6 +936,35 @@ func (s *IssueService) CreateWithContext(ctx context.Context, issue *Issue) (*Is
 // Create wraps CreateWithContext using the background context.
 func (s *IssueService) Create(issue *Issue) (*Issue, *Response, error) {
 	return s.CreateWithContext(context.Background(), issue)
+}
+
+// BulkCreateWithContext creates multiple issues in a single request.
+//
+// Jira API docs: https://developer.atlassian.com/cloud/jira/platform/rest/v2/api-group-issues/#api-rest-api-2-issue-bulk-post
+func (s *IssueService) BulkCreateWithContext(ctx context.Context, issues []Issue) (*BulkResult, *Response, error) {
+	apiEndpoint := "rest/api/2/issue/bulk"
+
+	payload := BulkRequest{
+		IssueUpdates: issues,
+	}
+
+	req, err := s.client.NewRequestWithContext(ctx, "POST", apiEndpoint, payload)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	result := new(BulkResult)
+
+	resp, err := s.client.Do(req, result)
+	if err != nil {
+		return nil, resp, NewJiraError(resp, err)
+	}
+
+	return result, resp, nil
+}
+
+func (s *IssueService) BulkCreate(issues []Issue) (*BulkResult, *Response, error) {
+	return s.BulkCreateWithContext(context.Background(), issues)
 }
 
 // UpdateWithOptionsWithContext updates an issue from a JSON representation,

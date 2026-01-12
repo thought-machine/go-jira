@@ -129,6 +129,121 @@ func TestIssueService_CreateThenGet(t *testing.T) {
 	}
 }
 
+func TestIssueService_BulkCreate(t *testing.T) {
+	setup()
+	defer teardown()
+
+	inputIssues := []Issue{
+		{
+			Fields: &IssueFields{
+				Project: Project{Key: "PROJ"},
+				Type:    IssueType{Name: "Task"},
+				Summary: "Bulk Issue 1",
+			},
+		},
+		{
+			Fields: &IssueFields{
+				Project: Project{Key: "PROJ"},
+				Type:    IssueType{Name: "Bug"},
+				Summary: "Bulk Issue 2",
+			},
+		},
+	}
+
+	testMux.HandleFunc("/rest/api/2/issue/bulk", func(w http.ResponseWriter, r *http.Request) {
+		testMethod(t, r, "POST")
+		testRequestURL(t, r, "/rest/api/2/issue/bulk")
+
+		// Verify payload wrapper
+		type bulkRequest struct {
+			IssueUpdates []Issue `json:"issueUpdates"`
+		}
+		var v bulkRequest
+		if err := json.NewDecoder(r.Body).Decode(&v); err != nil {
+			t.Errorf("Unable to decode json: %v", err)
+		}
+
+		if len(v.IssueUpdates) != 2 {
+			t.Errorf("Expected 2 issues, got %d", len(v.IssueUpdates))
+		}
+
+		w.WriteHeader(http.StatusCreated)
+		fmt.Fprint(w, `{
+			"issues": [
+				{ "id": "10001", "key": "PROJ-1", "self": "http://jira/1" },
+				{ "id": "10002", "key": "PROJ-2", "self": "http://jira/2" }
+			],
+			"errors": []
+		}`)
+	})
+
+	bulkResp, _, err := testClient.Issue.BulkCreate(inputIssues)
+	if err != nil {
+		t.Errorf("Issue.BulkCreate returned error: %v", err)
+	}
+
+	want := &BulkResult{
+		Issues: []Issue{
+			{ID: "10001", Key: "PROJ-1", Self: "http://jira/1"},
+			{ID: "10002", Key: "PROJ-2", Self: "http://jira/2"},
+		},
+		Errors: []BulkError{},
+	}
+
+	if !reflect.DeepEqual(bulkResp, want) {
+		t.Errorf("Issue.BulkCreate returned %+v, want %+v", bulkResp, want)
+	}
+}
+
+func TestIssueService_BulkCreate_PartialFailure(t *testing.T) {
+	setup()
+	defer teardown()
+
+	inputIssues := []Issue{
+		{Fields: &IssueFields{Project: Project{Key: "PROJ"}, Summary: "Valid"}},
+		{Fields: &IssueFields{Project: Project{Key: "PROJ"}}}, // Missing summary
+	}
+
+	testMux.HandleFunc("/rest/api/2/issue/bulk", func(w http.ResponseWriter, r *http.Request) {
+		testMethod(t, r, "POST")
+		w.WriteHeader(http.StatusCreated)
+		fmt.Fprint(w, `{
+			"issues": [
+				{ "id": "10001", "key": "PROJ-1" }
+			],
+			"errors": [
+				{
+					"status": 400,
+					"elementErrors": { "summary": "Missing summary" },
+					"failedElementNumber": 1
+				}
+			]
+		}`)
+	})
+
+	bulkResp, _, err := testClient.Issue.BulkCreate(inputIssues)
+	if err != nil {
+		t.Errorf("Issue.BulkCreate returned error: %v", err)
+	}
+
+	want := &BulkResult{
+		Issues: []Issue{
+			{ID: "10001", Key: "PROJ-1"},
+		},
+		Errors: []BulkError{
+			{
+				Status:        400,
+				ElementErrors: map[string]string{"summary": "Missing summary"},
+				FailedElement: 1,
+			},
+		},
+	}
+
+	if !reflect.DeepEqual(bulkResp, want) {
+		t.Errorf("Issue.BulkCreate returned %+v, want %+v", bulkResp, want)
+	}
+}
+
 func TestIssueService_Update(t *testing.T) {
 	setup()
 	defer teardown()
