@@ -44,7 +44,7 @@ type BulkRequest struct {
 	IssueUpdates []Issue `json:"issueUpdates"`
 }
 
-// BulkIssueResult represents the specific JSON body returned by the Bulk API.
+// BulkResult represents the specific JSON body returned by the Bulk API.
 type BulkResult struct {
 	Issues []Issue `json:"issues"`
 	Errors []BulkError `json:"errors"`
@@ -941,6 +941,8 @@ func (s *IssueService) Create(issue *Issue) (*Issue, *Response, error) {
 // BulkCreateWithContext creates multiple issues in a single request.
 //
 // Jira API docs: https://developer.atlassian.com/cloud/jira/platform/rest/v2/api-group-issues/#api-rest-api-2-issue-bulk-post
+// Note that the docs may state restrictions not checked in this function (e.g. limiting the number
+// of issues that can be created in a call). It is the responsibility of the caller to check this.
 func (s *IssueService) BulkCreateWithContext(ctx context.Context, issues []Issue) (*BulkResult, *Response, error) {
 	apiEndpoint := "rest/api/2/issue/bulk"
 
