@@ -46,15 +46,15 @@ type BulkRequest struct {
 
 // BulkResult represents the specific JSON body returned by the Bulk API.
 type BulkResult struct {
-	Issues []Issue `json:"issues"`
+	Issues []Issue     `json:"issues"`
 	Errors []BulkError `json:"errors"`
 }
 
 // BulkError represents the error structure specific to bulk operations.
 type BulkError struct {
-	Status int `json:"status"`
+	Status        int               `json:"status"`
 	ElementErrors map[string]string `json:"elementErrors"`
-	FailedElement int `json:"failedElementNumber"`
+	FailedElement int               `json:"failedElementNumber"`
 }
 
 // Issue represents a Jira issue.
@@ -151,6 +151,7 @@ type IssueFields struct {
 	Worklog                       *Worklog          `json:"worklog,omitempty" structs:"worklog,omitempty"`
 	IssueLinks                    []*IssueLink      `json:"issuelinks,omitempty" structs:"issuelinks,omitempty"`
 	Comments                      *Comments         `json:"comment,omitempty" structs:"comment,omitempty"`
+	StatusCategoryChangeDate      Time              `json:"statuscategorychangedate,omitempty" structs:"statuscategorychangedate,omitempty"`
 	FixVersions                   []*FixVersion     `json:"fixVersions,omitempty" structs:"fixVersions,omitempty"`
 	AffectsVersions               []*AffectsVersion `json:"versions,omitempty" structs:"versions,omitempty"`
 	Labels                        []string          `json:"labels,omitempty" structs:"labels,omitempty"`
@@ -1508,19 +1509,17 @@ func (s *IssueService) DoTransitionWithPayload(ticketID, payload interface{}) (*
 
 // InitIssueWithMetaAndFields returns Issue with with values from fieldsConfig properly set.
 //   - metaProject should contain metaInformation about the project where the issue should be created.
-//  --  metaIssuetype is the MetaInformation about the Issuetype that needs to be created.
-//  --   fieldsConfig is a key->value pair where key represents the name of the field as seen in the UI
-//  --   And value is the string value for that particular key.
-//   -  
-//     
+//     --  metaIssuetype is the MetaInformation about the Issuetype that needs to be created.
+//     --   fieldsConfig is a key->value pair where key represents the name of the field as seen in the UI
+//     --   And value is the string value for that particular key.
+//     -
 //
 // Note: This method doesn't verify that the fieldsConfig is complete with mandatory fields. The fieldsConfig is
 //
+// posed to be already verified with MetaIssueType.CheckCompleteAndAvailable. It will however return
+// rr if the key is not found.
+// Al values will be packed into Unknowns. This is much convenient. If the struct fields needs to be
 //
-//
-//posed to be already verified with MetaIssueType.CheckCompleteAndAvailable. It will however return
-//rr if the key is not found.
-//Al values will be packed into Unknowns. This is much convenient. If the struct fields needs to be
 //	configured as well, marshalling and unmarshalling will set the proper fields.
 func InitIssueWithMetaAndFields(metaProject *MetaProject, metaIssuetype *MetaIssueType, fieldsConfig map[string]string) (*Issue, error) {
 	issue := new(Issue)
