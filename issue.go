@@ -1070,6 +1070,59 @@ func (s *IssueService) UpdateIssue(jiraID string, data map[string]interface{}) (
 	return s.UpdateIssueWithContext(context.Background(), jiraID, data)
 }
 
+// UpdateIssueAndReturnWithOptionsWithContext updates an issue from a map,
+// forces the returnIssue=true parameter, and returns the updated Issue.
+//
+// Jira API docs: https://docs.atlassian.com/jira/REST/cloud/#api/2/issue-editIssue
+// Caller must close resp.Body
+func (s *IssueService) UpdateIssueAndReturnWithOptionsWithContext(ctx context.Context, jiraID string, data map[string]interface{}, opts *UpdateQueryOptions) (*Issue, *Response, error) {
+	apiEndpoint := fmt.Sprintf("rest/api/2/issue/%v", jiraID)
+
+	var localOpts UpdateQueryOptions
+	if opts != nil {
+		localOpts = *opts
+	}
+	shouldReturn := true
+	localOpts.ReturnIssue = &shouldReturn
+
+	url, err := addOptions(apiEndpoint, &localOpts)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	req, err := s.client.NewRequestWithContext(ctx, "PUT", url, data)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	responseIssue := new(Issue)
+	resp, err := s.client.Do(req, responseIssue)
+	if err != nil {
+		jerr := NewJiraError(resp, err)
+		return nil, resp, jerr
+	}
+
+	return responseIssue, resp, nil
+}
+
+// UpdateIssueAndReturnWithOptions wraps UpdateIssueAndReturnWithOptionsWithContext using the background context.
+// Caller must close resp.Body
+func (s *IssueService) UpdateIssueAndReturnWithOptions(jiraID string, data map[string]interface{}, opts *UpdateQueryOptions) (*Issue, *Response, error) {
+	return s.UpdateIssueAndReturnWithOptionsWithContext(context.Background(), jiraID, data, opts)
+}
+
+// UpdateIssueAndReturnWithContext updates an issue from a map and returns the updated issue.
+// Caller must close resp.Body
+func (s *IssueService) UpdateIssueAndReturnWithContext(ctx context.Context, jiraID string, data map[string]interface{}) (*Issue, *Response, error) {
+	return s.UpdateIssueAndReturnWithOptionsWithContext(ctx, jiraID, data, nil)
+}
+
+// UpdateIssueAndReturn wraps UpdateIssueAndReturnWithContext using the background context.
+// Caller must close resp.Body
+func (s *IssueService) UpdateIssueAndReturn(jiraID string, data map[string]interface{}) (*Issue, *Response, error) {
+	return s.UpdateIssueAndReturnWithContext(context.Background(), jiraID, data)
+}
+
 // AddCommentWithContext adds a new comment to issueID.
 //
 // Jira API docs: https://docs.atlassian.com/jira/REST/latest/#api/2/issue-addComment
