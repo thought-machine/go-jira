@@ -357,6 +357,61 @@ func TestIssueService_UpdateIssue(t *testing.T) {
 
 }
 
+func TestIssueService_UpdateIssueAndReturnWithOptions(t *testing.T) {
+	setup()
+	defer teardown()
+
+	testMux.HandleFunc("/rest/api/2/issue/TEST-1", func(w http.ResponseWriter, r *http.Request) {
+		testMethod(t, r, "PUT")
+		testRequestURL(t, r, "/rest/api/2/issue/TEST-1?notifyUsers=false&returnIssue=true")
+
+		j := new(map[string]interface{})
+		err := json.NewDecoder(r.Body).Decode(j)
+		if err != nil {
+			t.Errorf("Couldn't decode request body: %v", err)
+		}
+
+		fields, ok := (*j)["fields"].(map[string]interface{})
+		if !ok {
+			t.Errorf("Expected 'fields' in request body")
+		}
+		if fields["summary"] != "New Map Summary" {
+			t.Errorf("Expected summary 'New Map Summary', got '%s'", fields["summary"])
+		}
+
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, `{"key":"TEST-1", "fields":{"summary":"New Map Summary"}}`)
+	})
+
+	updateData := map[string]interface{}{
+		"fields": map[string]interface{}{
+			"summary": "New Map Summary",
+		},
+	}
+
+	opts := &UpdateQueryOptions{
+		NotifyUsers: Bool(false),
+	}
+
+	updatedIssue, resp, err := testClient.Issue.UpdateIssueAndReturnWithOptions("TEST-1", updateData, opts)
+
+	if err != nil {
+		t.Errorf("Issue.UpdateIssueAndReturnWithOptions returned error: %v", err)
+	}
+
+	if updatedIssue == nil {
+		t.Fatal("Expected updatedIssue to be non-nil")
+	}
+
+	if updatedIssue.Fields.Summary != "New Map Summary" {
+		t.Errorf("Expected summary 'New Map Summary', got '%s'", updatedIssue.Fields.Summary)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("Expected status 200, got %d", resp.StatusCode)
+	}
+}
+
 func TestIssueService_AddComment(t *testing.T) {
 	setup()
 	defer teardown()
