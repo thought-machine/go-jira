@@ -1886,6 +1886,57 @@ func TestIssueService_Get_Transitions(t *testing.T) {
 	}
 }
 
+func TestIssueService_Get_StatusCategoryChangeDate(t *testing.T) {
+	setup()
+	defer teardown()
+
+	// Define the expected timestamp string
+	timeStr := "2024-02-14T10:00:00.000+0000"
+
+	testMux.HandleFunc("/rest/api/2/issue/10002", func(w http.ResponseWriter, r *http.Request) {
+		testMethod(t, r, "GET")
+		testRequestURL(t, r, "/rest/api/2/issue/10002")
+
+		// Mimic the Jira response structure
+		fmt.Fprintf(w, `{
+			"expand":"renderedFields,names,schema,transitions,operations,editmeta,changelog,versionedRepresentations",
+			"id":"10002",
+			"self":"http://www.example.com/jira/rest/api/2/issue/10002",
+			"key":"EX-1",
+			"fields":{
+				"summary": "Test Issue",
+				"statuscategorychangedate": "%s"
+			}
+		}`, timeStr)
+	})
+
+	issue, _, err := testClient.Issue.Get("10002", nil)
+	if err != nil {
+		t.Errorf("Error given: %s", err)
+	}
+	if issue == nil {
+		t.Error("Expected issue. Issue is nil")
+		return
+	}
+
+	// Verify the field was populated
+	if time.Time(issue.Fields.StatusCategoryChangeDate).IsZero() {
+		t.Error("Expected StatusCategoryChangeDate to be set, but it was zero")
+	}
+
+	// We expect Jira to send this format: "2006-01-02T15:04:05.000-0700"
+	expectedTime, err := time.Parse("2006-01-02T15:04:05.000-0700", timeStr)
+	if err != nil {
+		t.Errorf("Bad test setup time format: %s", err)
+	}
+
+	actualTime := time.Time(issue.Fields.StatusCategoryChangeDate)
+
+	if !actualTime.Equal(expectedTime) {
+		t.Errorf("Expected time %v, but got %v", expectedTime, actualTime)
+	}
+}
+
 func TestIssueService_Get_Fields_AffectsVersions(t *testing.T) {
 	setup()
 	defer teardown()
