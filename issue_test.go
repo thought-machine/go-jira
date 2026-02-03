@@ -292,6 +292,48 @@ func TestIssueService_UpdateIssueWithOptions(t *testing.T) {
 	}
 }
 
+func TestIssueService_UpdateWithOptions_ReturnIssue(t *testing.T) {
+	setup()
+	defer teardown()
+
+	testMux.HandleFunc("/rest/api/2/issue/TEST-1", func(w http.ResponseWriter, r *http.Request) {
+		testMethod(t, r, "PUT")
+		testRequestURL(t, r, "/rest/api/2/issue/TEST-1?returnIssue=true")
+
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, `{"key":"TEST-1", "fields":{"summary":"Updated Summary via ReturnIssue"}}`)
+	})
+
+	issue := &Issue{
+		Key: "TEST-1",
+		Fields: &IssueFields{
+			Summary: "Updated Summary via ReturnIssue",
+		},
+	}
+
+	shouldReturn := true
+	opts := &UpdateQueryOptions{
+		ReturnIssue: &shouldReturn,
+	}
+
+	updatedIssue, resp, err := testClient.Issue.UpdateWithOptions(issue, opts)
+	if err != nil {
+		t.Errorf("Issue.UpdateWithOptions returned error: %v", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("Expected status 200, got %d", resp.StatusCode)
+	}
+
+	if updatedIssue == nil {
+		t.Fatal("Expected updatedIssue to be non-nil")
+	}
+
+	if updatedIssue.Fields.Summary != "Updated Summary via ReturnIssue" {
+		t.Errorf("Expected summary 'Updated Summary via ReturnIssue', got '%s'", updatedIssue.Fields.Summary)
+	}
+}
+
 func TestIssueService_UpdateIssue(t *testing.T) {
 	setup()
 	defer teardown()

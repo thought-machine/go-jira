@@ -37,6 +37,7 @@ type UpdateQueryOptions struct {
 	NotifyUsers            *bool `url:"notifyUsers,omitempty"`
 	OverrideScreenSecurity *bool `url:"overrideScreenSecurity,omitempty"`
 	OverrideEditableFlag   *bool `url:"overrideEditableFlag,omitempty"`
+	ReturnIssue            *bool `url:"returnIssue,omitempty"`
 }
 
 // BulkRequest represents a series of Jira issues.
@@ -984,6 +985,16 @@ func (s *IssueService) UpdateWithOptionsWithContext(ctx context.Context, issue *
 	req, err := s.client.NewRequestWithContext(ctx, "PUT", url, issue)
 	if err != nil {
 		return nil, nil, err
+	}
+	// Branch if we have requested to return the new issue.
+	if opts != nil && opts.ReturnIssue != nil && *opts.ReturnIssue {
+		responseIssue := new(Issue)
+		resp, err := s.client.Do(req, responseIssue)
+		if err != nil {
+			jerr := NewJiraError(resp, err)
+			return nil, resp, jerr
+		}
+		return responseIssue, resp, nil
 	}
 	resp, err := s.client.Do(req, nil)
 	if err != nil {
