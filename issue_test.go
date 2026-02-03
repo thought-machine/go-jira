@@ -1924,7 +1924,7 @@ func TestIssueService_Get_StatusCategoryChangeDate(t *testing.T) {
 		t.Error("Expected StatusCategoryChangeDate to be set, but it was zero")
 	}
 
-	// Jira usually sends this format: "2006-01-02T15:04:05.000-0700"
+	// We expect Jira to send this format: "2006-01-02T15:04:05.000-0700"
 	expectedTime, err := time.Parse("2006-01-02T15:04:05.000-0700", timeStr)
 	if err != nil {
 		t.Errorf("Bad test setup time format: %s", err)
