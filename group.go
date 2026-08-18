@@ -140,8 +140,7 @@ func (s *GroupService) AddWithContext(ctx context.Context, groupname string, use
 	responseGroup := new(Group)
 	resp, err := s.client.Do(req, responseGroup)
 	if err != nil {
-		jerr := NewJiraError(resp, err)
-		return nil, resp, jerr
+		return nil, resp, err
 	}
 
 	return responseGroup, resp, nil
@@ -163,13 +162,7 @@ func (s *GroupService) RemoveWithContext(ctx context.Context, groupname string, 
 		return nil, err
 	}
 
-	resp, err := s.client.Do(req, nil)
-	if err != nil {
-		jerr := NewJiraError(resp, err)
-		return resp, jerr
-	}
-
-	return resp, nil
+	return s.client.Do(req, nil)
 }
 
 // Remove wraps RemoveWithContext using the background context.

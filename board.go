@@ -144,8 +144,7 @@ func (s *BoardService) GetAllBoardsWithContext(ctx context.Context, opt *BoardLi
 	boards := new(BoardsList)
 	resp, err := s.client.Do(req, boards)
 	if err != nil {
-		jerr := NewJiraError(resp, err)
-		return nil, resp, jerr
+		return nil, resp, err
 	}
 
 	return boards, resp, err
@@ -170,8 +169,7 @@ func (s *BoardService) GetBoardWithContext(ctx context.Context, boardID int) (*B
 	board := new(Board)
 	resp, err := s.client.Do(req, board)
 	if err != nil {
-		jerr := NewJiraError(resp, err)
-		return nil, resp, jerr
+		return nil, resp, err
 	}
 
 	return board, resp, nil
@@ -200,8 +198,7 @@ func (s *BoardService) CreateBoardWithContext(ctx context.Context, board *Board)
 	responseBoard := new(Board)
 	resp, err := s.client.Do(req, responseBoard)
 	if err != nil {
-		jerr := NewJiraError(resp, err)
-		return nil, resp, jerr
+		return nil, resp, err
 	}
 
 	return responseBoard, resp, nil
@@ -224,9 +221,6 @@ func (s *BoardService) DeleteBoardWithContext(ctx context.Context, boardID int) 
 	}
 
 	resp, err := s.client.Do(req, nil)
-	if err != nil {
-		err = NewJiraError(resp, err)
-	}
 	return nil, resp, err
 }
 
@@ -276,9 +270,6 @@ func (s *BoardService) GetAllSprintsWithOptionsWithContext(ctx context.Context, 
 
 	result := new(SprintsList)
 	resp, err := s.client.Do(req, result)
-	if err != nil {
-		err = NewJiraError(resp, err)
-	}
 
 	return result, resp, err
 }
@@ -301,9 +292,6 @@ func (s *BoardService) GetBoardConfigurationWithContext(ctx context.Context, boa
 
 	result := new(BoardConfiguration)
 	resp, err := s.client.Do(req, result)
-	if err != nil {
-		err = NewJiraError(resp, err)
-	}
 
 	return result, resp, err
 

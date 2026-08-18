@@ -32,7 +32,7 @@ func (s *ComponentService) CreateWithContext(ctx context.Context, options *Creat
 	resp, err := s.client.Do(req, component)
 
 	if err != nil {
-		return nil, resp, NewJiraError(resp, err)
+		return nil, resp, err
 	}
 
 	return component, resp, nil

@@ -729,8 +729,7 @@ func (s *IssueService) GetWithContext(ctx context.Context, issueID string, optio
 	issue := new(Issue)
 	resp, err := s.client.Do(req, issue)
 	if err != nil {
-		jerr := NewJiraError(resp, err)
-		return nil, resp, jerr
+		return nil, resp, err
 	}
 
 	return issue, resp, nil
@@ -752,13 +751,7 @@ func (s *IssueService) DownloadAttachmentWithContext(ctx context.Context, attach
 		return nil, err
 	}
 
-	resp, err := s.client.Do(req, nil)
-	if err != nil {
-		jerr := NewJiraError(resp, err)
-		return resp, jerr
-	}
-
-	return resp, nil
+	return s.client.Do(req, nil)
 }
 
 // DownloadAttachment wraps DownloadAttachmentWithContext using the background context.
@@ -798,8 +791,7 @@ func (s *IssueService) PostAttachmentWithContext(ctx context.Context, issueID st
 	attachment := new([]Attachment)
 	resp, err := s.client.Do(req, attachment)
 	if err != nil {
-		jerr := NewJiraError(resp, err)
-		return nil, resp, jerr
+		return nil, resp, err
 	}
 
 	return attachment, resp, nil
@@ -820,13 +812,7 @@ func (s *IssueService) DeleteAttachmentWithContext(ctx context.Context, attachme
 		return nil, err
 	}
 
-	resp, err := s.client.Do(req, nil)
-	if err != nil {
-		jerr := NewJiraError(resp, err)
-		return resp, jerr
-	}
-
-	return resp, nil
+	return s.client.Do(req, nil)
 }
 
 // DeleteAttachment wraps DeleteAttachmentWithContext using the background context.
@@ -845,13 +831,7 @@ func (s *IssueService) DeleteLinkWithContext(ctx context.Context, linkID string)
 		return nil, err
 	}
 
-	resp, err := s.client.Do(req, nil)
-	if err != nil {
-		jerr := NewJiraError(resp, err)
-		return resp, jerr
-	}
-
-	return resp, nil
+	return s.client.Do(req, nil)
 }
 
 // DeleteLink wraps DeleteLinkWithContext using the background context.
@@ -961,7 +941,7 @@ func (s *IssueService) BulkCreateWithContext(ctx context.Context, issues []Issue
 
 	resp, err := s.client.Do(req, result)
 	if err != nil {
-		return nil, resp, NewJiraError(resp, err)
+		return nil, resp, err
 	}
 
 	return result, resp, nil
@@ -991,15 +971,13 @@ func (s *IssueService) UpdateWithOptionsWithContext(ctx context.Context, issue *
 		responseIssue := new(Issue)
 		resp, err := s.client.Do(req, responseIssue)
 		if err != nil {
-			jerr := NewJiraError(resp, err)
-			return nil, resp, jerr
+			return nil, resp, err
 		}
 		return responseIssue, resp, nil
 	}
 	resp, err := s.client.Do(req, nil)
 	if err != nil {
-		jerr := NewJiraError(resp, err)
-		return nil, resp, jerr
+		return nil, resp, err
 	}
 
 	// This is just to follow the rest of the API's convention of returning an issue.
@@ -1041,13 +1019,7 @@ func (s *IssueService) UpdateIssueWithOptionsWithContext(ctx context.Context, ji
 	if err != nil {
 		return nil, err
 	}
-	resp, err := s.client.Do(req, nil)
-	if err != nil {
-		jerr := NewJiraError(resp, err)
-		return resp, jerr
-	}
-
-	return resp, nil
+	return s.client.Do(req, nil)
 }
 
 // UpdateIssueWithOptions wraps UpdateIssueWithOptionsWithContext using the background context.
@@ -1098,8 +1070,7 @@ func (s *IssueService) UpdateIssueAndReturnWithOptionsWithContext(ctx context.Co
 	responseIssue := new(Issue)
 	resp, err := s.client.Do(req, responseIssue)
 	if err != nil {
-		jerr := NewJiraError(resp, err)
-		return nil, resp, jerr
+		return nil, resp, err
 	}
 
 	return responseIssue, resp, nil
@@ -1136,8 +1107,7 @@ func (s *IssueService) AddCommentWithContext(ctx context.Context, issueID string
 	responseComment := new(Comment)
 	resp, err := s.client.Do(req, responseComment)
 	if err != nil {
-		jerr := NewJiraError(resp, err)
-		return nil, resp, jerr
+		return nil, resp, err
 	}
 
 	return responseComment, resp, nil
@@ -1189,8 +1159,7 @@ func (s *IssueService) DeleteCommentWithContext(ctx context.Context, issueID, co
 
 	resp, err := s.client.Do(req, nil)
 	if err != nil {
-		jerr := NewJiraError(resp, err)
-		return jerr
+		return err
 	}
 	defer resp.Body.Close()
 
@@ -1222,8 +1191,7 @@ func (s *IssueService) AddWorklogRecordWithContext(ctx context.Context, issueID 
 	responseRecord := new(WorklogRecord)
 	resp, err := s.client.Do(req, responseRecord)
 	if err != nil {
-		jerr := NewJiraError(resp, err)
-		return nil, resp, jerr
+		return nil, resp, err
 	}
 
 	return responseRecord, resp, nil
@@ -1254,8 +1222,7 @@ func (s *IssueService) UpdateWorklogRecordWithContext(ctx context.Context, issue
 	responseRecord := new(WorklogRecord)
 	resp, err := s.client.Do(req, responseRecord)
 	if err != nil {
-		jerr := NewJiraError(resp, err)
-		return nil, resp, jerr
+		return nil, resp, err
 	}
 
 	return responseRecord, resp, nil
@@ -1277,12 +1244,7 @@ func (s *IssueService) AddLinkWithContext(ctx context.Context, issueLink *IssueL
 		return nil, err
 	}
 
-	resp, err := s.client.Do(req, nil)
-	if err != nil {
-		err = NewJiraError(resp, err)
-	}
-
-	return resp, err
+	return s.client.Do(req, nil)
 }
 
 // AddLink wraps AddLinkWithContext using the background context.
@@ -1330,9 +1292,7 @@ func (s *IssueService) SearchWithContext(ctx context.Context, jql string, option
 
 	v := new(searchResult)
 	resp, err := s.client.Do(req, v)
-	if err != nil {
-		err = NewJiraError(resp, err)
-	}
+
 	return v.Issues, resp, err
 }
 
@@ -1406,9 +1366,6 @@ func (s *IssueService) SearchV2JQLWithContext(ctx context.Context, jql string, o
 
 	v := new(searchResultV2)
 	resp, err := s.client.Do(req, v)
-	if err != nil {
-		err = NewJiraError(resp, err)
-	}
 
 	return v.Issues, resp, err
 }
@@ -1471,8 +1428,7 @@ func (s *IssueService) GetCustomFieldsWithContext(ctx context.Context, issueID s
 	issue := new(map[string]interface{})
 	resp, err := s.client.Do(req, issue)
 	if err != nil {
-		jerr := NewJiraError(resp, err)
-		return nil, resp, jerr
+		return nil, resp, err
 	}
 
 	m := *issue
@@ -1515,9 +1471,6 @@ func (s *IssueService) GetTransitionsWithContext(ctx context.Context, id string)
 
 	result := new(transitionResult)
 	resp, err := s.client.Do(req, result)
-	if err != nil {
-		err = NewJiraError(resp, err)
-	}
 	return result.Transitions, resp, err
 }
 
@@ -1557,12 +1510,7 @@ func (s *IssueService) DoTransitionWithPayloadWithContext(ctx context.Context, t
 		return nil, err
 	}
 
-	resp, err := s.client.Do(req, nil)
-	if err != nil {
-		err = NewJiraError(resp, err)
-	}
-
-	return resp, err
+	return s.client.Do(req, nil)
 }
 
 // DoTransitionWithPayload wraps DoTransitionWithPayloadWithContext using the background context.
@@ -1693,7 +1641,7 @@ func (s *IssueService) GetWatchersWithContext(ctx context.Context, issueID strin
 	watches := new(Watches)
 	resp, err := s.client.Do(req, watches)
 	if err != nil {
-		return nil, nil, NewJiraError(resp, err)
+		return nil, nil, err
 	}
 
 	result := []User{}
@@ -1702,7 +1650,7 @@ func (s *IssueService) GetWatchersWithContext(ctx context.Context, issueID strin
 		if watcher.AccountID != "" {
 			user, resp, err = s.client.User.GetByAccountID(watcher.AccountID)
 			if err != nil {
-				return nil, resp, NewJiraError(resp, err)
+				return nil, resp, err
 			}
 		}
 		result = append(result, *user)
@@ -1728,12 +1676,7 @@ func (s *IssueService) AddWatcherWithContext(ctx context.Context, issueID string
 		return nil, err
 	}
 
-	resp, err := s.client.Do(req, nil)
-	if err != nil {
-		err = NewJiraError(resp, err)
-	}
-
-	return resp, err
+	return s.client.Do(req, nil)
 }
 
 // AddWatcher wraps AddWatcherWithContext using the background context.
@@ -1754,12 +1697,7 @@ func (s *IssueService) RemoveWatcherWithContext(ctx context.Context, issueID str
 		return nil, err
 	}
 
-	resp, err := s.client.Do(req, nil)
-	if err != nil {
-		err = NewJiraError(resp, err)
-	}
-
-	return resp, err
+	return s.client.Do(req, nil)
 }
 
 // RemoveWatcher wraps RemoveWatcherWithContext using the background context.
@@ -1780,12 +1718,7 @@ func (s *IssueService) UpdateAssigneeWithContext(ctx context.Context, issueID st
 		return nil, err
 	}
 
-	resp, err := s.client.Do(req, nil)
-	if err != nil {
-		err = NewJiraError(resp, err)
-	}
-
-	return resp, err
+	return s.client.Do(req, nil)
 }
 
 // UpdateAssignee wraps UpdateAssigneeWithContext using the background context.
@@ -1816,9 +1749,6 @@ func (s *IssueService) GetRemoteLinksWithContext(ctx context.Context, id string)
 
 	result := new([]RemoteLink)
 	resp, err := s.client.Do(req, result)
-	if err != nil {
-		err = NewJiraError(resp, err)
-	}
 	return result, resp, err
 }
 
@@ -1841,8 +1771,7 @@ func (s *IssueService) AddRemoteLinkWithContext(ctx context.Context, issueID str
 	responseRemotelink := new(RemoteLink)
 	resp, err := s.client.Do(req, responseRemotelink)
 	if err != nil {
-		jerr := NewJiraError(resp, err)
-		return nil, resp, jerr
+		return nil, resp, err
 	}
 
 	return responseRemotelink, resp, nil
@@ -1863,13 +1792,7 @@ func (s *IssueService) UpdateRemoteLinkWithContext(ctx context.Context, issueID 
 		return nil, err
 	}
 
-	resp, err := s.client.Do(req, nil)
-	if err != nil {
-		jerr := NewJiraError(resp, err)
-		return resp, jerr
-	}
-
-	return resp, nil
+	return s.client.Do(req, nil)
 }
 
 // UpdateRemoteLink wraps UpdateRemoteLinkWithContext using the background context.

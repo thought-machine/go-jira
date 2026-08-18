@@ -139,8 +139,7 @@ func (fs *FilterService) GetListWithContext(ctx context.Context) ([]*Filter, *Re
 	filters := []*Filter{}
 	resp, err := fs.client.Do(req, &filters)
 	if err != nil {
-		jerr := NewJiraError(resp, err)
-		return nil, resp, jerr
+		return nil, resp, err
 	}
 	return filters, resp, err
 }
@@ -160,8 +159,7 @@ func (fs *FilterService) GetFavouriteListWithContext(ctx context.Context) ([]*Fi
 	filters := []*Filter{}
 	resp, err := fs.client.Do(req, &filters)
 	if err != nil {
-		jerr := NewJiraError(resp, err)
-		return nil, resp, jerr
+		return nil, resp, err
 	}
 	return filters, resp, err
 }
@@ -181,8 +179,7 @@ func (fs *FilterService) GetWithContext(ctx context.Context, filterID int) (*Fil
 	filter := new(Filter)
 	resp, err := fs.client.Do(req, filter)
 	if err != nil {
-		jerr := NewJiraError(resp, err)
-		return nil, resp, jerr
+		return nil, resp, err
 	}
 
 	return filter, resp, err
@@ -210,8 +207,7 @@ func (fs *FilterService) GetMyFiltersWithContext(ctx context.Context, opts *GetM
 	filters := []*Filter{}
 	resp, err := fs.client.Do(req, &filters)
 	if err != nil {
-		jerr := NewJiraError(resp, err)
-		return nil, resp, jerr
+		return nil, resp, err
 	}
 	return filters, resp, nil
 }
@@ -238,8 +234,7 @@ func (fs *FilterService) SearchWithContext(ctx context.Context, opt *FilterSearc
 	filters := new(FiltersList)
 	resp, err := fs.client.Do(req, filters)
 	if err != nil {
-		jerr := NewJiraError(resp, err)
-		return nil, resp, jerr
+		return nil, resp, err
 	}
 
 	return filters, resp, err

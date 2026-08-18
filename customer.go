@@ -60,7 +60,7 @@ func (c *CustomerService) CreateWithContext(ctx context.Context, email, displayN
 	responseCustomer := new(Customer)
 	resp, err := c.client.Do(req, responseCustomer)
 	if err != nil {
-		return nil, resp, NewJiraError(resp, err)
+		return nil, resp, err
 	}
 
 	return responseCustomer, resp, nil

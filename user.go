@@ -59,7 +59,7 @@ func (s *UserService) GetWithContext(ctx context.Context, accountId string) (*Us
 	user := new(User)
 	resp, err := s.client.Do(req, user)
 	if err != nil {
-		return nil, resp, NewJiraError(resp, err)
+		return nil, resp, err
 	}
 	return user, resp, nil
 }
@@ -83,7 +83,7 @@ func (s *UserService) GetByAccountIDWithContext(ctx context.Context, accountID s
 	user := new(User)
 	resp, err := s.client.Do(req, user)
 	if err != nil {
-		return nil, resp, NewJiraError(resp, err)
+		return nil, resp, err
 	}
 	return user, resp, nil
 }
@@ -112,13 +112,11 @@ func (s *UserService) CreateWithContext(ctx context.Context, user *User) (*User,
 	defer resp.Body.Close()
 	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		e := fmt.Errorf("could not read the returned data")
-		return nil, resp, NewJiraError(resp, e)
+		return nil, resp, fmt.Errorf("could not read the returned data")
 	}
 	err = json.Unmarshal(data, responseUser)
 	if err != nil {
-		e := fmt.Errorf("could not unmarshall the data into struct")
-		return nil, resp, NewJiraError(resp, e)
+		return nil, resp, fmt.Errorf("could not unmarshall the data into struct")
 	}
 	return responseUser, resp, nil
 }
@@ -140,11 +138,7 @@ func (s *UserService) DeleteWithContext(ctx context.Context, accountId string) (
 		return nil, err
 	}
 
-	resp, err := s.client.Do(req, nil)
-	if err != nil {
-		return resp, NewJiraError(resp, err)
-	}
-	return resp, nil
+	return s.client.Do(req, nil)
 }
 
 // Delete wraps DeleteWithContext using the background context.
@@ -166,7 +160,7 @@ func (s *UserService) GetGroupsWithContext(ctx context.Context, accountId string
 	userGroups := new([]UserGroup)
 	resp, err := s.client.Do(req, userGroups)
 	if err != nil {
-		return nil, resp, NewJiraError(resp, err)
+		return nil, resp, err
 	}
 	return userGroups, resp, nil
 }
@@ -188,7 +182,7 @@ func (s *UserService) GetSelfWithContext(ctx context.Context) (*User, *Response,
 	var user User
 	resp, err := s.client.Do(req, &user)
 	if err != nil {
-		return nil, resp, NewJiraError(resp, err)
+		return nil, resp, err
 	}
 	return &user, resp, nil
 }
@@ -283,7 +277,7 @@ func (s *UserService) FindWithContext(ctx context.Context, property string, twea
 	users := []User{}
 	resp, err := s.client.Do(req, &users)
 	if err != nil {
-		return nil, resp, NewJiraError(resp, err)
+		return nil, resp, err
 	}
 	return users, resp, nil
 }

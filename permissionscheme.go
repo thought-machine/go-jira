@@ -41,8 +41,7 @@ func (s *PermissionSchemeService) GetListWithContext(ctx context.Context) (*Perm
 	pss := new(PermissionSchemes)
 	resp, err := s.client.Do(req, &pss)
 	if err != nil {
-		jerr := NewJiraError(resp, err)
-		return nil, resp, jerr
+		return nil, resp, err
 	}
 
 	return pss, resp, nil
@@ -66,8 +65,7 @@ func (s *PermissionSchemeService) GetWithContext(ctx context.Context, schemeID i
 	ps := new(PermissionScheme)
 	resp, err := s.client.Do(req, ps)
 	if err != nil {
-		jerr := NewJiraError(resp, err)
-		return nil, resp, jerr
+		return nil, resp, err
 	}
 	if ps.Self == "" {
 		return nil, resp, fmt.Errorf("no permissionscheme with ID %d found", schemeID)

@@ -48,8 +48,7 @@ func (s *RoleService) GetListWithContext(ctx context.Context) (*[]Role, *Respons
 	roles := new([]Role)
 	resp, err := s.client.Do(req, roles)
 	if err != nil {
-		jerr := NewJiraError(resp, err)
-		return nil, resp, jerr
+		return nil, resp, err
 	}
 	return roles, resp, err
 }
@@ -71,8 +70,7 @@ func (s *RoleService) GetWithContext(ctx context.Context, roleID int) (*Role, *R
 	role := new(Role)
 	resp, err := s.client.Do(req, role)
 	if err != nil {
-		jerr := NewJiraError(resp, err)
-		return nil, resp, jerr
+		return nil, resp, err
 	}
 	if role.Self == "" {
 		return nil, resp, fmt.Errorf("no role with ID %d found", roleID)
