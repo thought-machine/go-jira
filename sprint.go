@@ -40,11 +40,7 @@ func (s *SprintService) MoveIssuesToSprintWithContext(ctx context.Context, sprin
 		return nil, err
 	}
 
-	resp, err := s.client.Do(req, nil)
-	if err != nil {
-		err = NewJiraError(resp, err)
-	}
-	return resp, err
+	return s.client.Do(req, nil)
 }
 
 // MoveIssuesToSprint wraps MoveIssuesToSprintWithContext using the background context.
@@ -69,9 +65,6 @@ func (s *SprintService) GetIssuesForSprintWithContext(ctx context.Context, sprin
 
 	result := new(IssuesInSprintResult)
 	resp, err := s.client.Do(req, result)
-	if err != nil {
-		err = NewJiraError(resp, err)
-	}
 
 	return result.Issues, resp, err
 }
@@ -112,8 +105,7 @@ func (s *SprintService) GetIssueWithContext(ctx context.Context, issueID string,
 	resp, err := s.client.Do(req, issue)
 
 	if err != nil {
-		jerr := NewJiraError(resp, err)
-		return nil, resp, jerr
+		return nil, resp, err
 	}
 
 	return issue, resp, nil

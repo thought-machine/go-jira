@@ -327,17 +327,18 @@ func (c *Client) Do(req *http.Request, v interface{}) (*Response, error) {
 	return resp, err
 }
 
-// CheckResponse checks the API response for errors, and returns them if present.
-// A response is considered an error if it has a status code outside the 200 range.
-// The caller is responsible to analyze the response body.
-// The body can contain JSON (if the error is intended) or xml (sometimes Jira just failes).
+// CheckResponse checks the API response for an error, and returns it if present.
+//
+// A response is considered to be an error if it has a status code outside the 200
+// range. This means that API endpoints that invoke an asynchronous operation, such
+// as those that perform a bulk operation on issues, are not supported by this
+// client.
 func CheckResponse(r *http.Response) error {
 	if c := r.StatusCode; 200 <= c && c <= 299 {
 		return nil
 	}
 
-	err := fmt.Errorf("request failed. Please analyze the request body for more details. Status code: %d", r.StatusCode)
-	return err
+	return NewJiraError(newResponse(r, nil), fmt.Errorf("HTTP %s", r.Status))
 }
 
 // GetBaseURL will return you the Base URL.

@@ -40,7 +40,7 @@ func (s *StatusCategoryService) GetListWithContext(ctx context.Context) ([]Statu
 	statusCategoryList := []StatusCategory{}
 	resp, err := s.client.Do(req, &statusCategoryList)
 	if err != nil {
-		return nil, resp, NewJiraError(resp, err)
+		return nil, resp, err
 	}
 	return statusCategoryList, resp, nil
 }

@@ -18,14 +18,28 @@ type Error struct {
 	Errors        map[string]string `json:"errors"`
 }
 
-// NewJiraError creates a new jira Error
+// NewJiraError creates an error from an unsuccessful response returned by the Jira
+// API. It is the caller's responsibility to ensure that the given response
+// represents a failed API request.
+//
+// If the response body contains a JSON-encoded error from the Jira API, the error
+// message is included in the returned error. If the response body contains non-JSON
+// data (e.g. XML, due to a non-API-related Jira failure), a generic error is
+// returned; the caller is then responsible for analysing the request body to
+// determine the cause of the failure.
 func NewJiraError(resp *Response, httpError error) error {
 	if resp == nil {
 		return errors.Wrap(httpError, "No response returned")
 	}
 
-	defer resp.Body.Close()
+	// Read the response body (so we can parse it), but allow the caller to read it
+	// for themselves should they want to. This is inefficient if the response body
+	// is large (because it resides in memory for as long as the response is in
+	// scope), but failure-case responses from Jira shouldn't be large enough to
+	// cause significant problems.
 	body, err := ioutil.ReadAll(resp.Body)
+	resp.Body.Close()
+	resp.Body = ioutil.NopCloser(bytes.NewReader(body))
 	if err != nil {
 		return errors.Wrap(err, httpError.Error())
 	}

@@ -78,8 +78,7 @@ func (s *OrganizationService) GetAllOrganizationsWithContext(ctx context.Context
 	v := new(PagedDTO)
 	resp, err := s.client.Do(req, v)
 	if err != nil {
-		jerr := NewJiraError(resp, err)
-		return nil, resp, jerr
+		return nil, resp, err
 	}
 
 	return v, resp, nil
@@ -111,8 +110,7 @@ func (s *OrganizationService) CreateOrganizationWithContext(ctx context.Context,
 	o := new(Organization)
 	resp, err := s.client.Do(req, &o)
 	if err != nil {
-		jerr := NewJiraError(resp, err)
-		return nil, resp, jerr
+		return nil, resp, err
 	}
 
 	return o, resp, nil
@@ -143,8 +141,7 @@ func (s *OrganizationService) GetOrganizationWithContext(ctx context.Context, or
 	o := new(Organization)
 	resp, err := s.client.Do(req, &o)
 	if err != nil {
-		jerr := NewJiraError(resp, err)
-		return nil, resp, jerr
+		return nil, resp, err
 	}
 
 	return o, resp, nil
@@ -171,13 +168,7 @@ func (s *OrganizationService) DeleteOrganizationWithContext(ctx context.Context,
 		return nil, err
 	}
 
-	resp, err := s.client.Do(req, nil)
-	if err != nil {
-		jerr := NewJiraError(resp, err)
-		return resp, jerr
-	}
-
-	return resp, nil
+	return s.client.Do(req, nil)
 }
 
 // DeleteOrganization wraps DeleteOrganizationWithContext using the background context.
@@ -205,8 +196,7 @@ func (s *OrganizationService) GetPropertiesKeysWithContext(ctx context.Context, 
 	pk := new(PropertyKeys)
 	resp, err := s.client.Do(req, &pk)
 	if err != nil {
-		jerr := NewJiraError(resp, err)
-		return nil, resp, jerr
+		return nil, resp, err
 	}
 
 	return pk, resp, nil
@@ -235,8 +225,7 @@ func (s *OrganizationService) GetPropertyWithContext(ctx context.Context, organi
 	ep := new(EntityProperty)
 	resp, err := s.client.Do(req, &ep)
 	if err != nil {
-		jerr := NewJiraError(resp, err)
-		return nil, resp, jerr
+		return nil, resp, err
 	}
 
 	return ep, resp, nil
@@ -263,13 +252,7 @@ func (s *OrganizationService) SetPropertyWithContext(ctx context.Context, organi
 		return nil, err
 	}
 
-	resp, err := s.client.Do(req, nil)
-	if err != nil {
-		jerr := NewJiraError(resp, err)
-		return resp, jerr
-	}
-
-	return resp, nil
+	return s.client.Do(req, nil)
 }
 
 // SetProperty wraps SetPropertyWithContext using the background context.
@@ -292,13 +275,7 @@ func (s *OrganizationService) DeletePropertyWithContext(ctx context.Context, org
 		return nil, err
 	}
 
-	resp, err := s.client.Do(req, nil)
-	if err != nil {
-		jerr := NewJiraError(resp, err)
-		return resp, jerr
-	}
-
-	return resp, nil
+	return s.client.Do(req, nil)
 }
 
 // DeleteProperty wraps DeletePropertyWithContext using the background context.
@@ -327,8 +304,7 @@ func (s *OrganizationService) GetUsersWithContext(ctx context.Context, organizat
 	users := new(PagedDTO)
 	resp, err := s.client.Do(req, &users)
 	if err != nil {
-		jerr := NewJiraError(resp, err)
-		return nil, resp, jerr
+		return nil, resp, err
 	}
 
 	return users, resp, nil
@@ -352,13 +328,7 @@ func (s *OrganizationService) AddUsersWithContext(ctx context.Context, organizat
 		return nil, err
 	}
 
-	resp, err := s.client.Do(req, nil)
-	if err != nil {
-		jerr := NewJiraError(resp, err)
-		return resp, jerr
-	}
-
-	return resp, nil
+	return s.client.Do(req, nil)
 }
 
 // AddUsers wraps AddUsersWithContext using the background context.
@@ -381,13 +351,7 @@ func (s *OrganizationService) RemoveUsersWithContext(ctx context.Context, organi
 		return nil, err
 	}
 
-	resp, err := s.client.Do(req, nil)
-	if err != nil {
-		jerr := NewJiraError(resp, err)
-		return resp, jerr
-	}
-
-	return resp, nil
+	return s.client.Do(req, nil)
 }
 
 // RemoveUsers wraps RemoveUsersWithContext using the background context.

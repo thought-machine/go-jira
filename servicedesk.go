@@ -40,8 +40,7 @@ func (s *ServiceDeskService) GetOrganizationsWithContext(ctx context.Context, se
 	orgs := new(PagedDTO)
 	resp, err := s.client.Do(req, &orgs)
 	if err != nil {
-		jerr := NewJiraError(resp, err)
-		return nil, resp, jerr
+		return nil, resp, err
 	}
 
 	return orgs, resp, nil
@@ -72,13 +71,7 @@ func (s *ServiceDeskService) AddOrganizationWithContext(ctx context.Context, ser
 		return nil, err
 	}
 
-	resp, err := s.client.Do(req, nil)
-	if err != nil {
-		jerr := NewJiraError(resp, err)
-		return resp, jerr
-	}
-
-	return resp, nil
+	return s.client.Do(req, nil)
 }
 
 // AddOrganization wraps AddOrganizationWithContext using the background context.
@@ -107,13 +100,7 @@ func (s *ServiceDeskService) RemoveOrganizationWithContext(ctx context.Context, 
 		return nil, err
 	}
 
-	resp, err := s.client.Do(req, nil)
-	if err != nil {
-		jerr := NewJiraError(resp, err)
-		return resp, jerr
-	}
-
-	return resp, nil
+	return s.client.Do(req, nil)
 }
 
 // RemoveOrganization wraps RemoveOrganizationWithContext using the background context.
@@ -140,7 +127,7 @@ func (s *ServiceDeskService) AddCustomersWithContext(ctx context.Context, servic
 
 	resp, err := s.client.Do(req, nil)
 	if err != nil {
-		return resp, NewJiraError(resp, err)
+		return resp, err
 	}
 
 	defer resp.Body.Close()
@@ -172,7 +159,7 @@ func (s *ServiceDeskService) RemoveCustomersWithContext(ctx context.Context, ser
 
 	resp, err := s.client.Do(req, nil)
 	if err != nil {
-		return resp, NewJiraError(resp, err)
+		return resp, err
 	}
 
 	defer resp.Body.Close()
@@ -209,7 +196,7 @@ func (s *ServiceDeskService) ListCustomersWithContext(ctx context.Context, servi
 
 	resp, err := s.client.Do(req, nil)
 	if err != nil {
-		return nil, resp, NewJiraError(resp, err)
+		return nil, resp, err
 	}
 	defer resp.Body.Close()
 
