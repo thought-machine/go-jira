@@ -31,9 +31,9 @@ jobs:
           check-latest: true
 
       - name: Run golangci-lint (Go ${{ matrix.go }})
-        uses: golangci/golangci-lint-action@v4
+        uses: golangci/golangci-lint-action@v9
         with:
-          version: v1.56
+          version: v2.12
 
       - name: Run Unit tests (Go ${{ matrix.go }})
         run: make test
