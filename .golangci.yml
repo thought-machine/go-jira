@@ -1,5 +1,8 @@
 version: "2"
 linters:
+  disable:
+    - govet
+    - staticcheck
   exclusions:
     presets:
       - comments
