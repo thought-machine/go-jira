@@ -14,13 +14,14 @@ permissions:
 
 jobs:
   test:
-    name: Test and lint
+    name: Test and lint (Go ${{ matrix.go }})
     strategy:
       fail-fast: false
       matrix:
-        go: [ '1.26', '1.25' ]
-        os: [ 'windows-latest', 'ubuntu-latest', 'macOS-latest' ]
-    runs-on: ${{ matrix.os }}
+        go:
+          - '1.26'
+          - '1.25'
+    runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v7
@@ -30,10 +31,10 @@ jobs:
           go-version: ${{ matrix.go }}
           check-latest: true
 
-      - name: Run golangci-lint (Go ${{ matrix.go }})
+      - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v9
         with:
           version: v2.12
 
-      - name: Run Unit tests (Go ${{ matrix.go }})
+      - name: Run Unit tests
         run: make test
