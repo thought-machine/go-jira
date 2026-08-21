@@ -165,7 +165,7 @@ func TestError_ShortMessage(t *testing.T) {
 	}
 
 	err := msgErr.Error()
-	if err != "Issue does not exist: original http error" {
+	if err != "original http error: Issue does not exist" {
 		t.Errorf("Expected short message. Got %s", err)
 	}
 
