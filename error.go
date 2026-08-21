@@ -62,11 +62,11 @@ func NewJiraError(resp *Response, httpError error) error {
 func (e *Error) Error() string {
 	if len(e.ErrorMessages) > 0 {
 		// return fmt.Sprintf("%v", e.HTTPError)
-		return fmt.Sprintf("%s: %v", e.ErrorMessages[0], e.HTTPError)
+		return fmt.Sprintf("%v: %s", e.HTTPError, e.ErrorMessages[0])
 	}
 	if len(e.Errors) > 0 {
 		for key, value := range e.Errors {
-			return fmt.Sprintf("%s - %s: %v", key, value, e.HTTPError)
+			return fmt.Sprintf("%v: %s - %s", e.HTTPError, key, value)
 		}
 	}
 	return e.HTTPError.Error()
