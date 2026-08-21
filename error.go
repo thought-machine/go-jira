@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"strings"
-
-	"github.com/pkg/errors"
 )
 
 // Error message from Jira
@@ -29,33 +27,32 @@ type Error struct {
 // determine the cause of the failure.
 func NewJiraError(resp *Response, httpError error) error {
 	if resp == nil {
-		return errors.Wrap(httpError, "No response returned")
+		return fmt.Errorf("no response returned: %w", httpError)
 	}
 
-	// Read the response body (so we can parse it), but allow the caller to read it
-	// for themselves should they want to. This is inefficient if the response body
-	// is large (because it resides in memory for as long as the response is in
-	// scope), but failure-case responses from Jira shouldn't be large enough to
-	// cause significant problems.
-	body, err := ioutil.ReadAll(resp.Body)
-	resp.Body.Close()
-	resp.Body = ioutil.NopCloser(bytes.NewReader(body))
-	if err != nil {
-		return errors.Wrap(err, httpError.Error())
-	}
 	jerr := Error{HTTPError: httpError}
 	contentType := resp.Header.Get("Content-Type")
 	if strings.HasPrefix(contentType, "application/json") {
+		// Read the response body (so we can parse it), but allow the caller to read it
+		// for themselves should they want to. This is inefficient if the response body
+		// is large (because it resides in memory for as long as the response is in
+		// scope), but failure-case responses from Jira shouldn't be large enough to
+		// cause significant problems.
+		body, err := ioutil.ReadAll(resp.Body)
+		resp.Body.Close()
+		resp.Body = ioutil.NopCloser(bytes.NewReader(body))
+		if err != nil {
+			return fmt.Errorf("read response body: %w", err)
+		}
 		err = json.Unmarshal(body, &jerr)
 		if err != nil {
-			httpError = errors.Wrap(errors.New("could not parse JSON"), httpError.Error())
-			return errors.Wrap(err, httpError.Error())
+			return fmt.Errorf("parse response body as JSON: %w", err)
 		}
 	} else {
 		if httpError == nil {
-			return fmt.Errorf("got response status %s:%s", resp.Status, string(body))
+			return fmt.Errorf("HTTP %s", resp.Status)
 		}
-		return errors.Wrap(httpError, fmt.Sprintf("%s: %s", resp.Status, string(body)))
+		return fmt.Errorf("HTTP %s: %w", resp.Status, httpError)
 	}
 
 	return &jerr
@@ -65,11 +62,11 @@ func NewJiraError(resp *Response, httpError error) error {
 func (e *Error) Error() string {
 	if len(e.ErrorMessages) > 0 {
 		// return fmt.Sprintf("%v", e.HTTPError)
-		return fmt.Sprintf("%s: %v", e.ErrorMessages[0], e.HTTPError)
+		return fmt.Sprintf("%v: %s", e.HTTPError, e.ErrorMessages[0])
 	}
 	if len(e.Errors) > 0 {
 		for key, value := range e.Errors {
-			return fmt.Sprintf("%s - %s: %v", key, value, e.HTTPError)
+			return fmt.Sprintf("%v: %s - %s", e.HTTPError, key, value)
 		}
 	}
 	return e.HTTPError.Error()

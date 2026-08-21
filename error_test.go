@@ -20,7 +20,7 @@ func TestError_NewJiraError(t *testing.T) {
 	req, _ := testClient.NewRequest("GET", "/", nil)
 	resp, _ := testClient.Do(req, nil)
 
-	err := NewJiraError(resp, errors.New("Original http error"))
+	err := NewJiraError(resp, errors.New("original http error"))
 	if err, ok := err.(*Error); !ok {
 		t.Errorf("Expected jira Error. Got %s", err.Error())
 	}
@@ -31,15 +31,15 @@ func TestError_NewJiraError(t *testing.T) {
 }
 
 func TestError_NoResponse(t *testing.T) {
-	err := NewJiraError(nil, errors.New("Original http error"))
+	err := NewJiraError(nil, errors.New("original http error"))
 
 	msg := err.Error()
-	if !strings.Contains(msg, "Original http error") {
+	if !strings.Contains(msg, "original http error") {
 		t.Errorf("Expected the original error message: Got\n%s\n", msg)
 	}
 
-	if !strings.Contains(msg, "No response") {
-		t.Errorf("Expected the 'No response' error message: Got\n%s\n", msg)
+	if !strings.Contains(msg, "no response returned") {
+		t.Errorf("Expected the 'no response returned' error message: Got\n%s\n", msg)
 	}
 }
 
@@ -54,10 +54,10 @@ func TestError_NoJSON(t *testing.T) {
 	req, _ := testClient.NewRequest("GET", "/", nil)
 	resp, _ := testClient.Do(req, nil)
 
-	err := NewJiraError(resp, errors.New("Original http error"))
+	err := NewJiraError(resp, errors.New("original http error"))
 	msg := err.Error()
 
-	if !strings.Contains(msg, "200 OK: Original message body: Original http error") {
+	if !strings.Contains(msg, "HTTP 200 OK: original http error") {
 		t.Errorf("Expected the HTTP status: Got\n%s\n", msg)
 	}
 }
@@ -76,7 +76,7 @@ func TestError_Unauthorized_NilError(t *testing.T) {
 
 	err := NewJiraError(resp, nil)
 	msg := err.Error()
-	if !strings.Contains(msg, "401 Unauthorized:User is not authorized") {
+	if !strings.Contains(msg, "HTTP 401 Unauthorized") {
 		t.Errorf("Expected Unauthorized HTTP status: Got\n%s\n", msg)
 	}
 }
@@ -93,11 +93,11 @@ func TestError_BadJSON(t *testing.T) {
 	req, _ := testClient.NewRequest("GET", "/", nil)
 	resp, _ := testClient.Do(req, nil)
 
-	err := NewJiraError(resp, errors.New("Original http error"))
+	err := NewJiraError(resp, errors.New("original http error"))
 	msg := err.Error()
 
-	if !strings.Contains(msg, "could not parse JSON") {
-		t.Errorf("Expected the 'could not parse JSON' error message: Got\n%s\n", msg)
+	if !strings.Contains(msg, "parse response body as JSON") {
+		t.Errorf("Expected the 'parse response body as JSON' error message: Got\n%s\n", msg)
 	}
 }
 
@@ -141,7 +141,7 @@ func TestError_NilOriginalMessageLongError(t *testing.T) {
 
 func TestError_ShortMessage(t *testing.T) {
 	msgErr := &Error{
-		HTTPError:     errors.New("Original http error"),
+		HTTPError:     errors.New("original http error"),
 		ErrorMessages: []string{"Issue does not exist"},
 		Errors: map[string]string{
 			"issuetype": "issue type is required",
@@ -150,7 +150,7 @@ func TestError_ShortMessage(t *testing.T) {
 	}
 
 	mapErr := &Error{
-		HTTPError:     errors.New("Original http error"),
+		HTTPError:     errors.New("original http error"),
 		ErrorMessages: nil,
 		Errors: map[string]string{
 			"issuetype": "issue type is required",
@@ -159,13 +159,13 @@ func TestError_ShortMessage(t *testing.T) {
 	}
 
 	noErr := &Error{
-		HTTPError:     errors.New("Original http error"),
+		HTTPError:     errors.New("original http error"),
 		ErrorMessages: nil,
 		Errors:        nil,
 	}
 
 	err := msgErr.Error()
-	if err != "Issue does not exist: Original http error" {
+	if err != "original http error: Issue does not exist" {
 		t.Errorf("Expected short message. Got %s", err)
 	}
 
@@ -175,14 +175,14 @@ func TestError_ShortMessage(t *testing.T) {
 	}
 
 	err = noErr.Error()
-	if err != "Original http error" {
+	if err != "original http error" {
 		t.Errorf("Expected original error message. Got %s", err)
 	}
 }
 
 func TestError_LongMessage(t *testing.T) {
 	longError := &Error{
-		HTTPError:     errors.New("Original http error"),
+		HTTPError:     errors.New("original http error"),
 		ErrorMessages: []string{"Issue does not exist."},
 		Errors: map[string]string{
 			"issuetype": "issue type is required",
@@ -191,7 +191,7 @@ func TestError_LongMessage(t *testing.T) {
 	}
 
 	msg := longError.LongError()
-	if !strings.Contains(msg, "Original http error") {
+	if !strings.Contains(msg, "original http error") {
 		t.Errorf("Expected the error message: Got\n%s\n", msg)
 	}
 
