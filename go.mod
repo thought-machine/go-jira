@@ -9,7 +9,6 @@ require (
 	github.com/google/go-querystring v1.2.0
 	github.com/hashicorp/go-retryablehttp v0.7.8
 	github.com/jdx/go-netrc v1.0.0
-	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.12.1
 	github.com/trivago/tgo v1.0.7
 	golang.org/x/term v0.45.0
