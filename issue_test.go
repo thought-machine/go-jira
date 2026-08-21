@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"reflect"
 	"strings"
 	"testing"
@@ -1700,9 +1701,6 @@ func getTime(original time.Time) *Time {
 }
 
 func TestIssueService_GetWorklogs(t *testing.T) {
-	setup()
-	defer teardown()
-
 	tt := []struct {
 		name     string
 		response string
@@ -1791,15 +1789,21 @@ func TestIssueService_GetWorklogs(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			uri := fmt.Sprintf(tc.uri, tc.issueId)
-			testMux.HandleFunc(uri, func(w http.ResponseWriter, r *http.Request) {
+			setup()
+			defer teardown()
+
+			fullURI := fmt.Sprintf(tc.uri, tc.issueId)
+			uri, err := url.Parse(fullURI)
+			if err != nil {
+				t.Errorf("unexpected error: %v", err)
+			}
+			testMux.HandleFunc(uri.Path, func(w http.ResponseWriter, r *http.Request) {
 				testMethod(t, r, "GET")
-				testRequestURL(t, r, uri)
+				testRequestURL(t, r, fullURI)
 				_, _ = fmt.Fprint(w, tc.response)
 			})
 
 			var worklog *Worklog
-			var err error
 
 			if tc.option != nil {
 				worklog, _, err = testClient.Issue.GetWorklogs(tc.issueId, WithQueryOptions(tc.option))
