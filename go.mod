@@ -1,6 +1,6 @@
 module github.com/thought-machine/go-jira
 
-go 1.25.0
+go 1.26.0
 
 require (
 	github.com/fatih/structs v1.1.0
@@ -11,11 +11,11 @@ require (
 	github.com/jdx/go-netrc v1.0.0
 	github.com/stretchr/testify v1.12.1
 	github.com/trivago/tgo v1.0.7
-	golang.org/x/term v0.45.0
+	golang.org/x/term v0.47.0
 )
 
 require (
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
-	golang.org/x/sys v0.47.0 // indirect
+	golang.org/x/sys v0.49.0 // indirect
 )
